@@ -15,6 +15,7 @@
 		9C6EED7B26E0D927007DECBF /* CalendarDateCollectionViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C6EED7A26E0D927007DECBF /* CalendarDateCollectionViewCell.swift */; };
 		9C6EED8026E0E1C3007DECBF /* MainViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C6EED7F26E0E1C3007DECBF /* MainViewController.swift */; };
 		9CF1922F26F20E7100A3F979 /* Day.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CF1922E26F20E7100A3F979 /* Day.swift */; };
+		9CF1923926F708DA00A3F979 /* CalendarViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CF1923826F708DA00A3F979 /* CalendarViewModel.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -28,6 +29,7 @@
 		9C6EED7A26E0D927007DECBF /* CalendarDateCollectionViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarDateCollectionViewCell.swift; sourceTree = "<group>"; };
 		9C6EED7F26E0E1C3007DECBF /* MainViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainViewController.swift; sourceTree = "<group>"; };
 		9CF1922E26F20E7100A3F979 /* Day.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Day.swift; sourceTree = "<group>"; };
+		9CF1923826F708DA00A3F979 /* CalendarViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarViewModel.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -60,6 +62,7 @@
 		9C6EED6526E0C98B007DECBF /* WeeklyCalendar */ = {
 			isa = PBXGroup;
 			children = (
+				9CF1923726F708C100A3F979 /* ViewModels */,
 				9CF1922D26F20E5A00A3F979 /* Models */,
 				9C6EED6626E0C98B007DECBF /* AppDelegate.swift */,
 				9C6EED6826E0C98B007DECBF /* SceneDelegate.swift */,
@@ -79,6 +82,14 @@
 				9CF1922E26F20E7100A3F979 /* Day.swift */,
 			);
 			path = Models;
+			sourceTree = "<group>";
+		};
+		9CF1923726F708C100A3F979 /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				9CF1923826F708DA00A3F979 /* CalendarViewModel.swift */,
+			);
+			path = ViewModels;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -151,6 +162,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				9CF1923926F708DA00A3F979 /* CalendarViewModel.swift in Sources */,
 				9C6EED6726E0C98B007DECBF /* AppDelegate.swift in Sources */,
 				9C6EED8026E0E1C3007DECBF /* MainViewController.swift in Sources */,
 				9C6EED7B26E0D927007DECBF /* CalendarDateCollectionViewCell.swift in Sources */,
