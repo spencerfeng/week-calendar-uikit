@@ -11,10 +11,9 @@ class MainViewController: UIViewController {
     
     // MARK: - Properties
     private let SPACING: CGFloat = 10
-    private let NUMBER_OF_DAYS_IN_WEEK: Int = 7
     private let calendar = Calendar(identifier: .gregorian)
     
-    private var selectedDay = Day(date: Date())
+    private let viewModel: CalendarViewModel
     
     private var fullScrollDistanceBase: CGFloat {
         return calendarContainerSize.width - self.SPACING
@@ -29,24 +28,10 @@ class MainViewController: UIViewController {
     
     private var cellSize: CGSize {
         return CGSize(
-            width: (calendarContainerSize.width - CGFloat(NUMBER_OF_DAYS_IN_WEEK + 1) * self.SPACING) / CGFloat(7),
+            width: (calendarContainerSize.width - CGFloat(viewModel.NUMBER_OF_DAYS_IN_WEEK + 1) * self.SPACING) / CGFloat(7),
             height: calendarContainerSize.height - 2 * self.SPACING
         )
     }
-    
-    private lazy var dataSource: [Day] = {
-        guard let todayLastWeek = calendar.date(byAdding: .day, value: -NUMBER_OF_DAYS_IN_WEEK, to: selectedDay.date),
-              let todayNextWeek = calendar.date(byAdding: .day, value: NUMBER_OF_DAYS_IN_WEEK, to: selectedDay.date)
-        else {
-            fatalError("Calendar data can not be initialised")
-        }
-        
-        let daysInThisWeek = generateDaysInWeek(for: selectedDay.date)
-        let daysInLastWeek = generateDaysInWeek(for: todayLastWeek)
-        let daysInNextWeek = generateDaysInWeek(for: todayNextWeek)
-        
-        return daysInLastWeek + daysInThisWeek + daysInNextWeek
-    }()
     
     private lazy var weeklyCalendarCollectionView: UICollectionView = {
         let layout = UICollectionViewFlowLayout()
@@ -70,6 +55,16 @@ class MainViewController: UIViewController {
         return collectionView
     }()
     
+    // MARK: - Initialisers
+    init(viewModel: CalendarViewModel) {
+        self.viewModel = viewModel
+        super.init(nibName: nil, bundle: nil)
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
     // MARK: - Life cycles
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -78,7 +73,7 @@ class MainViewController: UIViewController {
         layoutViews()
         
         DispatchQueue.main.async {
-            self.weeklyCalendarCollectionView.setContentOffset(CGPoint(x: CGFloat(self.NUMBER_OF_DAYS_IN_WEEK) * (self.cellSize.width + self.SPACING), y: 0), animated: false)
+            self.weeklyCalendarCollectionView.setContentOffset(CGPoint(x: CGFloat(self.viewModel.NUMBER_OF_DAYS_IN_WEEK) * (self.cellSize.width + self.SPACING), y: 0), animated: false)
         }
     }
     
@@ -93,50 +88,20 @@ class MainViewController: UIViewController {
         ])
     }
     
-    // MARK: - Helpers
-    private func generateDaysInWeek(for baseDate: Date) -> [Day] {
-        let weekdayOfBaseDate = calendar.component(.weekday, from: baseDate)
-        
-        let days: [Day] = (1...NUMBER_OF_DAYS_IN_WEEK)
-            .map { day in
-                return generateDay(offsetBy: day - weekdayOfBaseDate, for: baseDate)
-            }
-        return days
-    }
-    
-    private func generateDay(offsetBy dayOffset: Int, for baseDate: Date) -> Day {
-        let date = calendar.date(byAdding: .day, value: dayOffset, to: baseDate) ?? baseDate
-        return Day(date: date)
-    }
-    
-    private func getIndexPathOfSelectedDay() -> IndexPath? {
-        if let indexOfCurrentSelectedDay = dataSource.firstIndex(where: {$0.date == selectedDay.date}) {
-            return IndexPath(row: indexOfCurrentSelectedDay, section: 0)
-        }
-        return nil
-    }
-    
-    private func updateSelectedDayByAdding(numberOfDays: Int) {
-        guard let upcomingSelectedDate = calendar.date(byAdding: .day, value: numberOfDays, to: selectedDay.date) else {
-            fatalError("Failed to update the selected day")
-        }
-        selectedDay = Day(date: upcomingSelectedDate)
-    }
-    
 }
 
 extension MainViewController: UICollectionViewDataSource {
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        return dataSource.count
+        return viewModel.days.count
     }
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        let day = dataSource[indexPath.row]
+        let day = viewModel.days[indexPath.row]
         
         guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: CalendarDateCollectionViewCell.reuseIdentifier, for: indexPath) as? CalendarDateCollectionViewCell else {
             fatalError("CalendarDateCollectionViewCell not found")
         }
-        cell.configureCell(day: day, isSelected: day.date == selectedDay.date)
+        cell.configureCell(day: day, isSelected: day.date == viewModel.selectedDay.date)
         
         return cell
     }
@@ -151,11 +116,11 @@ extension MainViewController: UICollectionViewDelegateFlowLayout {
         var itemsToReload = [indexPath]
         
         // find the indexPath of the current selected day
-        if let indexPathOfSelectedDay = getIndexPathOfSelectedDay() {
+        if let indexPathOfSelectedDay = viewModel.getIndexPathOfSelectedDay() {
             itemsToReload.append(indexPathOfSelectedDay)
         }
         
-        selectedDay = dataSource[indexPath.row]
+        viewModel.selectedDay = viewModel.days[indexPath.row]
         weeklyCalendarCollectionView.reloadItems(at: itemsToReload)
     }
 }
@@ -167,18 +132,18 @@ extension MainViewController: UIScrollViewDelegate {
 
         if scrollView.contentOffset.x.truncatingRemainder(dividingBy: fullScrollDistanceBase) <= 0.5 * (fullScrollDistanceBase) {
             if isLeft {
-                updateSelectedDayByAdding(numberOfDays: -NUMBER_OF_DAYS_IN_WEEK)
+                viewModel.updateSelectedDayByAdding(numberOfDays: -viewModel.NUMBER_OF_DAYS_IN_WEEK)
             }
             DispatchQueue.main.async {
-                let updatedContentOffsetX = CGFloat(groupIndex * self.NUMBER_OF_DAYS_IN_WEEK) * (self.cellSize.width + self.SPACING)
+                let updatedContentOffsetX = CGFloat(groupIndex * self.viewModel.NUMBER_OF_DAYS_IN_WEEK) * (self.cellSize.width + self.SPACING)
                 scrollView.setContentOffset(CGPoint(x: updatedContentOffsetX, y: 0), animated: true)
             }
         } else {
             if !isLeft {
-                updateSelectedDayByAdding(numberOfDays: NUMBER_OF_DAYS_IN_WEEK)
+                viewModel.updateSelectedDayByAdding(numberOfDays: viewModel.NUMBER_OF_DAYS_IN_WEEK)
             }
             DispatchQueue.main.async {
-                let updatedContentOffsetX = CGFloat((groupIndex + 1) * self.NUMBER_OF_DAYS_IN_WEEK) * (self.cellSize.width + self.SPACING)
+                let updatedContentOffsetX = CGFloat((groupIndex + 1) * self.viewModel.NUMBER_OF_DAYS_IN_WEEK) * (self.cellSize.width + self.SPACING)
                 scrollView.setContentOffset(CGPoint(x: updatedContentOffsetX, y: 0), animated: true)
             }
         }
@@ -191,34 +156,16 @@ extension MainViewController: UIScrollViewDelegate {
         if isLeft {
             // first week in data source
             if groupIndex == 0 {
-                let firstDayInDataSource = self.dataSource[0]
-
-                // create days for the previous week
-                guard let lastDayOfThePreviousWeek = calendar.date(byAdding: .day, value: -1, to: firstDayInDataSource.date) else {
-                    fatalError("Days in the previous week can not be created")
-                }
-                let daysInThePreviousWeek = generateDaysInWeek(for: lastDayOfThePreviousWeek)
-
-                // update data source
-                dataSource = daysInThePreviousWeek + dataSource
+                viewModel.prependANewWeek()
                 
                 DispatchQueue.main.async {
-                    self.weeklyCalendarCollectionView.setContentOffset(CGPoint(x: CGFloat(self.NUMBER_OF_DAYS_IN_WEEK) * (self.cellSize.width + self.SPACING), y: 0), animated: false)
+                    self.weeklyCalendarCollectionView.setContentOffset(CGPoint(x: CGFloat(self.viewModel.NUMBER_OF_DAYS_IN_WEEK) * (self.cellSize.width + self.SPACING), y: 0), animated: false)
                 }
             }
         } else {
             // last week in data source
-            if groupIndex + 1 == dataSource.count / NUMBER_OF_DAYS_IN_WEEK {
-                let lastDayInDataSource = self.dataSource[self.dataSource.count - 1]
-
-                // create days for the next week
-                guard let firstDayOfTheNextWeek = calendar.date(byAdding: .day, value: 1, to: lastDayInDataSource.date) else {
-                    fatalError("Days in the next week can not be created")
-                }
-                let daysInTheNextWeek = generateDaysInWeek(for: firstDayOfTheNextWeek)
-                
-                // update data source
-                dataSource = dataSource + daysInTheNextWeek
+            if groupIndex + 1 == viewModel.days.count / viewModel.NUMBER_OF_DAYS_IN_WEEK {
+                viewModel.appendANewWeek()
             }
         }
 
