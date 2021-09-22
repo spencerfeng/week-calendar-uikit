@@ -113,15 +113,16 @@ extension MainViewController: UICollectionViewDelegateFlowLayout {
     }
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        var itemsToReload = [indexPath]
+        guard let indexPathOfSelectedDay = viewModel.getIndexPathOfSelectedDay() else {
+            return
+        }
         
-        // find the indexPath of the current selected day
-        if let indexPathOfSelectedDay = viewModel.getIndexPathOfSelectedDay() {
-            itemsToReload.append(indexPathOfSelectedDay)
+        if indexPathOfSelectedDay == indexPath {
+            return
         }
         
         viewModel.selectedDay = viewModel.days[indexPath.row]
-        weeklyCalendarCollectionView.reloadItems(at: itemsToReload)
+        weeklyCalendarCollectionView.reloadItems(at:  [indexPath, indexPathOfSelectedDay])
     }
 }
 
