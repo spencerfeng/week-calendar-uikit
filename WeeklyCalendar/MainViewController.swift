@@ -9,11 +9,17 @@ import UIKit
 
 class MainViewController: UIViewController {
     
+    // MARK: - typealiases
+    typealias DataSource = UICollectionViewDiffableDataSource<Int, Day>
+    typealias Snapshot = NSDiffableDataSourceSnapshot<Int, Day>
+    
     // MARK: - Properties
     private let SPACING: CGFloat = 10
     private let calendar = Calendar(identifier: .gregorian)
     
     private let viewModel: CalendarViewModel
+    
+    private lazy var dataSource = makeDataSource()
     
     private var fullScrollDistanceBase: CGFloat {
         return calendarContainerSize.width - self.SPACING
@@ -45,7 +51,6 @@ class MainViewController: UIViewController {
         collectionView.backgroundColor = .systemTeal
         collectionView.showsHorizontalScrollIndicator = false
         collectionView.layer.cornerRadius = 10
-        collectionView.dataSource = self
         collectionView.delegate = self
         
         collectionView.register(CalendarDateCollectionViewCell.self, forCellWithReuseIdentifier: CalendarDateCollectionViewCell.reuseIdentifier)
@@ -71,6 +76,7 @@ class MainViewController: UIViewController {
         view.backgroundColor = .systemBackground
         
         layoutViews()
+        applySnapshot()
         
         DispatchQueue.main.async {
             self.weeklyCalendarCollectionView.setContentOffset(CGPoint(x: CGFloat(self.viewModel.NUMBER_OF_DAYS_IN_WEEK) * (self.cellSize.width + self.SPACING), y: 0), animated: false)
@@ -88,23 +94,23 @@ class MainViewController: UIViewController {
         ])
     }
     
-}
-
-extension MainViewController: UICollectionViewDataSource {
-    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        return viewModel.days.count
+    // MARK: - Functions
+    func makeDataSource() -> DataSource {
+        let dataSource = DataSource(collectionView: weeklyCalendarCollectionView, cellProvider: { (collectionView, indexPath, day) -> UICollectionViewCell? in
+            let cell = collectionView.dequeueReusableCell(withReuseIdentifier: CalendarDateCollectionViewCell.reuseIdentifier, for: indexPath) as? CalendarDateCollectionViewCell
+            cell?.configureCell(day: day, isSelected: day.date == self.viewModel.selectedDay.date)
+            return cell
+        })
+        return dataSource
     }
     
-    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        let day = viewModel.days[indexPath.row]
-        
-        guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: CalendarDateCollectionViewCell.reuseIdentifier, for: indexPath) as? CalendarDateCollectionViewCell else {
-            fatalError("CalendarDateCollectionViewCell not found")
-        }
-        cell.configureCell(day: day, isSelected: day.date == viewModel.selectedDay.date)
-        
-        return cell
+    func applySnapshot() {
+        var snapshot = Snapshot()
+        snapshot.appendSections([0])
+        snapshot.appendItems(viewModel.days)
+        dataSource.apply(snapshot, animatingDifferences: false)
     }
+    
 }
 
 extension MainViewController: UICollectionViewDelegateFlowLayout {
@@ -113,7 +119,10 @@ extension MainViewController: UICollectionViewDelegateFlowLayout {
     }
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        guard let indexPathOfSelectedDay = viewModel.getIndexPathOfSelectedDay() else {
+        guard let indexPathOfSelectedDay = viewModel.getIndexPathOfSelectedDay(),
+              let oldSelectedDay = dataSource.itemIdentifier(for: indexPathOfSelectedDay),
+              let newSelectedDay = dataSource.itemIdentifier(for: indexPath)
+        else {
             return
         }
         
@@ -121,8 +130,13 @@ extension MainViewController: UICollectionViewDelegateFlowLayout {
             return
         }
         
+        var newSnapshot = dataSource.snapshot()
+        newSnapshot.reloadItems([oldSelectedDay, newSelectedDay])
+        
         viewModel.selectedDay = viewModel.days[indexPath.row]
-        weeklyCalendarCollectionView.reloadItems(at:  [indexPath, indexPathOfSelectedDay])
+        
+        dataSource.apply(newSnapshot)
+       
     }
 }
 
@@ -169,7 +183,7 @@ extension MainViewController: UIScrollViewDelegate {
                 viewModel.appendANewWeek()
             }
         }
-
-        weeklyCalendarCollectionView.reloadData()
+        
+        applySnapshot()
     }
 }

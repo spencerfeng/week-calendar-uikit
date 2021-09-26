@@ -7,6 +7,6 @@
 
 import Foundation
 
-struct Day {
+struct Day: Hashable {
     let date: Date
 }
